@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CX Maturity Scan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
+<style>
+  /* Layout: one column, max 820px; header, two tabs (skan 1–5, rubryka 1–3), result panel under the form. Nothing is stored. */
+  :root {
+    --bg: #F4F5FA; --surface: #FFFFFF; --fg: #030928; --muted: #5A6078; --line: #D9DCE6;
+    --accent: #B4865E; --accent-soft: #F6F1EA; --navy: #030928; --navy-fg: #FFFFFF;
+    --lvl1: #DAC4B0; --lvl2: #B4865E; --lvl3: #030928;
+    --font: "Open Sans", "Segoe UI", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0B1020; --surface: #141A33; --fg: #EFF2FC; --muted: #AEB4CC; --line: #2A3254;
+    --accent: #C5A181; --accent-soft: #1E1A1A; --navy: #1E2650; --navy-fg: #FFFFFF;
+    --lvl1: #6B5844; --lvl2: #B4865E; --lvl3: #3A4A8C; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #0B1020; --surface: #141A33; --fg: #EFF2FC; --muted: #AEB4CC; --line: #2A3254;
+    --accent: #C5A181; --accent-soft: #1E1A1A; --navy: #1E2650; --navy-fg: #FFFFFF;
+    --lvl1: #6B5844; --lvl2: #B4865E; --lvl3: #3A4A8C; color-scheme: dark }
+
+  body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5;
+         padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  header { padding-block: 28px 18px; display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  h1 { font-size: clamp(24px, 4vw, 32px); margin: 4px 0 6px; font-weight: 700; text-wrap: balance; line-height: 1.15; }
+  .lead { color: var(--muted); margin: 0; max-width: 60ch; }
+  .brand { font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 6px; white-space: nowrap; }
+  .note { font-size: 12.5px; color: var(--muted); background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; margin: 10px 0 18px; }
+
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+  .tab:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .field { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .field label.t { display: block; font-weight: 600; margin-bottom: 2px; }
+  .field .q { color: var(--muted); font-size: 13.5px; margin-bottom: 10px; }
+  .scale { display: flex; gap: 6px; flex-wrap: wrap; }
+  .scale input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .scale label.opt { flex: 1 1 110px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; cursor: pointer; font-size: 13px; text-align: center; min-width: 0; }
+  .scale label.opt b { display: block; font-size: 16px; }
+  .scale input:checked + label.opt { background: var(--navy); color: var(--navy-fg); border-color: var(--navy); }
+  .scale input:focus-visible + label.opt { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .rub { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .rub label.opt { text-align: left; font-size: 13px; line-height: 1.35; }
+  .rub label.opt b { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 4px; color: var(--accent); }
+  .scale input:checked + label.opt b { color: var(--navy-fg); }
+  .rub.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .rub.five label.opt { font-size: 12.5px; }
+  @media (max-width: 900px) { .rub.five { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .rub { grid-template-columns: 1fr; } }
+  .comment { width: 100%; box-sizing: border-box; margin-top: 10px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 13.5px; background: var(--bg); color: var(--fg); resize: vertical; min-height: 40px; }
+
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .meta input { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit; background: var(--surface); color: var(--fg); }
+  .meta label { font-size: 12.5px; color: var(--muted); display: block; margin-bottom: 4px; }
+  @media (max-width: 560px) { .meta { grid-template-columns: 1fr; } }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 24px; align-items: center; }
+  .btn { font: inherit; font-weight: 600; border-radius: 6px; padding: 10px 18px; cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: var(--navy-fg); }
+  .btn.secondary { background: transparent; color: var(--fg); border-color: var(--line); }
+  .progress { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+  .result { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .result h2 { margin: 0 0 4px; font-size: 20px; }
+  .score { display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap; }
+  .score .big { font-size: 48px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; }
+  .score .lvl { font-size: 18px; font-weight: 700; }
+  .score .sub { color: var(--muted); font-size: 13.5px; }
+  .interp { margin: 14px 0; padding: 12px 14px; border-radius: 8px; background: var(--accent-soft); }
+  .bars { display: grid; gap: 8px; margin-top: 14px; }
+  .bar { display: grid; grid-template-columns: minmax(120px, 220px) 1fr 40px; gap: 10px; align-items: center; font-size: 13.5px; }
+  .bar .track { height: 12px; background: var(--line); border-radius: 6px; overflow: hidden; }
+  .bar .fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width .4s ease; }
+  .bar .fill.low { background: var(--lvl1); }
+  .bar .fill.high { background: var(--lvl3); }
+  .bar .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  @media (max-width: 560px) { .bar { grid-template-columns: 1fr 48px; } .bar .track { grid-column: 1 / 2; } .bar .name { grid-column: 1 / -1; } }
+  .levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; font-size: 12.5px; }
+  .levels div { border-radius: 6px; padding: 8px 10px; border: 1px solid var(--line); color: var(--muted); }
+  .levels div.on { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); font-weight: 600; }
+  @media (max-width: 560px) { .levels { grid-template-columns: 1fr; } }
+  .next h3 { font-size: 15px; margin: 16px 0 6px; }
+  .next ul { margin: 0; padding-left: 18px; }
+  .next li { margin-bottom: 4px; }
+  .copyout { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  footer { margin-top: 28px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+  @media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Szablon ćwiczenia · Podstawy zarządzania doświadczeniem klienta</div>
+      <h1>CX Maturity Scan</h1>
+      <p class="lead">Diagnoza poziomu dojrzałości zarządzania doświadczeniem klienta (CX). Oceń organizację, a aplikacja policzy wynik i poda interpretację.</p>
+    </div>
+    <div class="brand">Akademia Leona Koźmińskiego</div>
+  </header>
+  <div class="note">Aplikacja niczego nie zapisuje i nie wysyła. Po odświeżeniu strony odpowiedzi znikną. Jeśli chcesz zachować wynik, skopiuj podsumowanie przyciskiem pod wynikiem.</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-scan" aria-selected="true" aria-controls="panel-scan">Skan 1–5 (model Forrester)</button>
+    <button class="tab" role="tab" id="tab-rub" aria-selected="false" aria-controls="panel-rub">Ocena 1–3 (rubryka)</button>
+  </div>
+
+  <div class="meta">
+    <div><label for="org">Organizacja</label><input id="org" type="text" placeholder="np. Bank regionalny" autocomplete="off"></div>
+    <div><label for="branch">Branża</label><input id="branch" type="text" placeholder="np. bankowość detaliczna" autocomplete="off"></div>
+  </div>
+
+  <!-- ===== Panel 1: skan 1–5 ===== -->
+  <section id="panel-scan" role="tabpanel" aria-labelledby="tab-scan">
+    <form id="form-scan"></form>
+    <div class="actions">
+      <button class="btn" type="button" id="calc-scan">Pokaż wynik</button>
+      <button class="btn secondary" type="button" id="reset-scan">Wyczyść</button>
+      <span class="progress" id="prog-scan">0 / 5 wymiarów ocenionych</span>
+    </div>
+    <div class="result" id="res-scan" hidden></div>
+  </section>
+
+  <!-- ===== Panel 2: rubryka 1–3 ===== -->
+  <section id="panel-rub" role="tabpanel" aria-labelledby="tab-rub" hidden>
+    <form id="form-rub"></form>
+    <div class="actions">
+      <button class="btn" type="button" id="calc-rub">Pokaż wynik</button>
+      <button class="btn secondary" type="button" id="reset-rub">Wyczyść</button>
+      <span class="progress" id="prog-rub">0 / 5 wymiarów ocenionych</span>
+    </div>
+    <div class="result" id="res-rub" hidden></div>
+  </section>
+
+  <footer>Skan 1–5 na podstawie modelu dojrzałości CX Forrestera; rubryka 1–3 wg materiału kursu. Punkt odniesienia dla Polski: badanie „Przyszłość Customer Experience w Polsce” 2026 (Grupa OEX, CAM ALK; N = 117), w którym powiązanie celów CX z celami biznesowymi oceniło pozytywnie 44,0% organizacji, a 15,5% mierzy CX bez przełożenia na działania.</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // ---------- dane ----------
+  var SCAN = [
+    { id: 'vision', name: 'CX Vision & Strategy', q: 'Na ile organizacja ma spójną wizję i strategię CX?',
+      lv: ['Nie ma wizji ani strategii CX. O doświadczeniu klienta mówi się okazjonalnie, przy skargach lub kryzysach.',
+           'Jest ogólna deklaracja („klient w centrum”), ale bez celów, priorytetów i budżetu. Działania CX są rozproszone i doraźne.',
+           'Istnieje spisana strategia CX z celami, ale znają ją głównie zespoły obsługi i marketingu; nie przekłada się na decyzje innych działów.',
+           'Strategia CX ma cele, priorytety i budżet; jest znana w całej organizacji i okresowo przeglądana. Część decyzji produktowych i procesowych odwołuje się do niej.',
+           'Wizja CX jest częścią strategii firmy. Każdy zespół ma cele CX powiązane z celami biznesowymi, a decyzje inwestycyjne są oceniane przez pryzmat wpływu na klienta.'],
+      tip: 'Spisz jednozdaniową wizję CX i powiąż ją z 2–3 celami biznesowymi (retencja, koszt obsługi, przychód).' },
+    { id: 'understand', name: 'Customer Understanding', q: 'Jak głęboko rozumie potrzeby i emocje klientów?',
+      lv: ['Wiedza o klientach opiera się na intuicji i pojedynczych opiniach. Nie ma segmentów, person ani map podróży.',
+           'Prowadzone są sporadyczne badania (ankieta, kilka wywiadów). Wyniki trafiają do raportu, rzadko do zespołów projektowych.',
+           'Są persony i mapy podróży dla wybranych ścieżek, oparte na badaniach. Dane o klientach leżą w kilku systemach i są łączone ręcznie.',
+           'Dane z badań, operacji i rynku są zintegrowane w jednym widoku; mapy podróży są aktualizowane, a emocje i punkty bólu klientów są mierzone.',
+           'Organizacja rozumie zadania, emocje i kontekst klientów w czasie zbliżonym do rzeczywistego; insighty są dostępne dla każdego zespołu i uruchamiają działania.'],
+      tip: 'Zbuduj jedną mapę podróży dla najważniejszej ścieżki na podstawie danych, nie wyobrażeń; dodaj krzywą emocji.' },
+    { id: 'design', name: 'Design & Delivery', q: 'Jak projektuje i dostarcza doświadczenia klienta?',
+      lv: ['Doświadczenie jest wynikiem procesów wewnętrznych; nikt go nie projektuje. Klient sam łączy kanały i powtarza informacje.',
+           'Pojedyncze usprawnienia punktów styku (nowy formularz, chatbot) wdrażane bez spojrzenia na całą ścieżkę i bez testów z klientami.',
+           'Kluczowe ścieżki są projektowane z użyciem map podróży lub service blueprintu; prototypy są testowane z klientami, ale wdrożenie bywa niespójne między kanałami.',
+           'Projektowanie doświadczeń jest standardem dla nowych produktów i procesów; kanały są spójne, a przejścia między nimi (w tym od AI do człowieka) zachowują kontekst.',
+           'Doświadczenie jest projektowane od początku każdego projektu, mierzone po wdrożeniu i iterowane. Organizacja usuwa zbędne kontakty, zamiast je tanio obsługiwać.'],
+      tip: 'Narysuj service blueprint dla jednej ścieżki i znajdź problem za linią widoczności (dane, integracja, uprawnienia).' },
+    { id: 'measure', name: 'Measurement', q: 'Czy mierzy efekty CX i łączy je z wynikami biznesowymi?',
+      lv: ['Brak wskaźników CX. Jedyne sygnały to liczba skarg i opinie w internecie.',
+           'Mierzony jest jeden wskaźnik (zwykle NPS lub CSAT) okresowo; wyniki są prezentowane, ale rzadko prowadzą do działań.',
+           'Są wskaźniki relacyjne i transakcyjne (NPS, CSAT, CES lub FCR) w kluczowych punktach styku; pętla zwrotna działa wybiórczo i bez informacji do klienta.',
+           'Wskaźniki CX są zestawiane z wynikami biznesowymi (retencja, koszt obsługi, przychód); zamknięta pętla obejmuje analizę, decyzję i wdrożenie.',
+           'CX jest mierzone na trzech poziomach (relacyjnym, transakcyjnym, biznesowym), a wyniki sterują decyzjami zarządu i budżetem. Klient dowiaduje się, co zmieniło się dzięki jego opinii.'],
+      tip: 'Połącz jeden wskaźnik transakcyjny (CES lub FCR) z jednym biznesowym (retencja, koszt rozwiązania sprawy) i raportuj razem.' },
+    { id: 'gov', name: 'Governance & Culture', q: 'Czy CX jest wspierane przez kulturę i struktury organizacyjne?',
+      lv: ['CX nie ma właściciela. Kierownictwo mówi o klientach, ale nie przeznacza na to zasobów; pracownicy pierwszej linii nie mają uprawnień.',
+           'Jest osoba lub mały zespół odpowiedzialny za CX, ale bez mandatu wobec innych działów; wsparcie zarządu jest deklaratywne.',
+           'CX ma właściciela i sponsora w zarządzie; działania są koordynowane między wybranymi działami, a część pracowników ma cele związane z CX.',
+           'Odpowiedzialność za CX jest podzielona między działy i rozliczana; pracownicy pierwszej linii mają uprawnienia do rozwiązywania spraw, a ich doświadczenie (EX) jest mierzone.',
+           'Klientocentryczność jest wpleciona w kulturę: w rekrutację, cele, nagrody i decyzje. Zarząd regularnie pracuje na danych i historiach klientów, a CX jest wspólną odpowiedzialnością całej firmy.'],
+      tip: 'Wyznacz właściciela CX i wprowadź cotygodniowy przegląd 10 spraw klientów z udziałem zarządu.' }
+  ];
+  var SCAN_LEVELS = ['Brak', 'Początkujący', 'Rozwijający się', 'Zaawansowany', 'Zintegrowany'];
+  var SCAN_INTERP = [
+    { max: 2.5, name: 'Ad hoc / Reaktywny', text: 'Organizacja działa reaktywnie. CX pojawia się incydentalnie, bez spójnej wizji; działania skupiają się na rozwiązywaniu bieżących problemów klientów. Brakuje właściciela CX i mierników jakości doświadczeń. Najpierw mandat: właściciel, cele, dowód wartości biznesowej. Dopiero potem technologia.' },
+    { max: 3.5, name: 'Zarządzany / Rozwijający się', text: 'CX jest coraz bardziej ustrukturyzowane: są badania satysfakcji, mapy podróży i pojedyncze inicjatywy w różnych działach. Strategia dopiero się kształtuje, dane o klientach zaczynają być integrowane. Kluczowe ryzyko tego etapu to pomiar bez konsekwencji: wyniki trafiają do raportu, a nie do decyzji i budżetu.' },
+    { max: 5.01, name: 'Zintegrowany / Proaktywny', text: 'CX jest elementem strategii organizacji. Doświadczenie klienta jest mierzone, zarządzane i optymalizowane na podstawie danych; istnieje kultura prokliencka, zaangażowanie przywództwa i mechanizmy ciągłego doskonalenia. Na tym etapie barierą staje się zwykle technologia i zasoby, nie mandat.' }
+  ];
+  var RUB = [
+    { id: 'r1', name: '1. Strategia CX', lv: ['Brak formalnej strategii; CX to działania ad hoc', 'Istnieje ogólna wizja CX', 'CX wpisane w strategię firmy, mierzone, rozwijane'] },
+    { id: 'r2', name: '2. Kultura i przywództwo', lv: ['CX to temat marketingu', 'Kierownictwo wspiera CX, ale nierówno w organizacji', 'CX to wspólna odpowiedzialność całej firmy'] },
+    { id: 'r3', name: '3. Słuchanie klienta', lv: ['Brak systematycznego feedbacku', 'Regularne badania, brak spójnej analizy', 'Stały, zautomatyzowany system głosu klienta'] },
+    { id: 'r4', name: '4. Projektowanie doświadczeń', lv: ['Brak map podróży, procesy wewnętrzne dominują', 'Częściowe mapowanie kluczowych ścieżek', 'CX projektowane na bazie insightów i danych'] },
+    { id: 'r5', name: '5. Pomiar i doskonalenie', lv: ['Brak wskaźników CX', 'Pomiar NPS / satysfakcji, ale bez ciągłego doskonalenia', 'KPI CX włączone do oceny efektywności biznesu'] }
+  ];
+  var RUB_LEVELS = ['Początkujący', 'Rozwijający się', 'Zaawansowany'];
+  var RUB_INTERP = [
+    { min: 5, max: 7, name: 'Początkujący (5–7 pkt)', text: 'Organizacja działa reaktywnie – CX pojawia się incydentalnie, bez spójnej wizji. Działania skupiają się głównie na rozwiązywaniu bieżących problemów klientów. Brakuje właściciela CX i mierników jakości doświadczeń.' },
+    { min: 8, max: 11, name: 'Rozwijający się (8–11 pkt)', text: 'CX jest coraz bardziej ustrukturyzowane – pojawiają się badania satysfakcji, mapy podróży klienta, pojedyncze inicjatywy w różnych działach. Strategia CX dopiero się kształtuje; zespół buduje świadomość i zaczyna integrować dane o klientach.' },
+    { min: 12, max: 15, name: 'Dojrzały (12–15 pkt)', text: 'CX stanowi element strategii organizacyjnej. Doświadczenie klienta jest mierzone, zarządzane i optymalizowane na podstawie danych. Istnieje kultura prokliencka, zaangażowanie przywództwa oraz mechanizmy ciągłego doskonalenia i innowacji w CX.' }
+  ];
+
+  // ---------- budowa formularzy ----------
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function buildScan() {
+    var f = document.getElementById('form-scan'), html = '';
+    SCAN.forEach(function (d, i) {
+      html += '<div class="field"><label class="t" id="l-' + d.id + '">' + (i + 1) + '. ' + esc(d.name) + '</label><div class="q">' + esc(d.q) + '</div>' +
+        '<div class="scale rub five" role="radiogroup" aria-labelledby="l-' + d.id + '">';
+      SCAN_LEVELS.forEach(function (lv, k) {
+        var id = 's-' + d.id + '-' + (k + 1);
+        html += '<input type="radio" name="s-' + d.id + '" id="' + id + '" value="' + (k + 1) + '"><label class="opt" for="' + id + '"><b>' + (k + 1) + ' – ' + esc(lv) + '</b>' + esc(d.lv[k]) + '</label>';
+      });
+      html += '</div><textarea class="comment" id="c-' + d.id + '" placeholder="Komentarz / dowód (opcjonalnie)" rows="1"></textarea></div>';
+    });
+    f.innerHTML = html;
+  }
+  function buildRub() {
+    var f = document.getElementById('form-rub'), html = '';
+    RUB.forEach(function (d) {
+      html += '<div class="field"><label class="t" id="l-' + d.id + '">' + esc(d.name) + '</label><div class="scale rub" role="radiogroup" aria-labelledby="l-' + d.id + '">';
+      d.lv.forEach(function (txt, k) {
+        var id = 'r-' + d.id + '-' + (k + 1);
+        html += '<input type="radio" name="r-' + d.id + '" id="' + id + '" value="' + (k + 1) + '"><label class="opt" for="' + id + '"><b>' + (k + 1) + ' – ' + esc(RUB_LEVELS[k]) + '</b>' + esc(txt) + '</label>';
+      });
+      html += '</div></div>';
+    });
+    f.innerHTML = html;
+  }
+
+  function val(name) { var el = document.querySelector('input[name="' + name + '"]:checked'); return el ? Number(el.value) : null; }
+  function fmt(n) { return n.toFixed(2).replace('.', ','); }
+  function orgLine() {
+    var o = document.getElementById('org').value.trim(), b = document.getElementById('branch').value.trim();
+    return (o || b) ? (o + (b ? ' · ' + b : '')) : '';
+  }
+  function barsHtml(items, maxv) {
+    return '<div class="bars">' + items.map(function (it) {
+      var pct = Math.round(it.v / maxv * 100), cls = it.v <= maxv * 0.4 ? ' low' : (it.v >= maxv * 0.8 ? ' high' : '');
+      return '<div class="bar"><span class="name">' + esc(it.name) + '</span><div class="track"><div class="fill' + cls + '" style="width:' + pct + '%"></div></div><span class="v">' + it.v + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function levelsHtml(list, onIdx) {
+    return '<div class="levels">' + list.map(function (l, i) { return '<div class="' + (i === onIdx ? 'on' : '') + '">' + esc(l) + '</div>'; }).join('') + '</div>';
+  }
+  function copyBtn(id) { return '<div class="copyout"><button class="btn secondary" type="button" id="' + id + '">Kopiuj podsumowanie</button> <span id="' + id + '-msg"></span></div>'; }
+  function wireCopy(id, text) {
+    var b = document.getElementById(id), m = document.getElementById(id + '-msg');
+    b.addEventListener('click', function () {
+      function fallback() { var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); m.textContent = 'Skopiowano.'; } catch (e) { m.textContent = 'Zaznacz tekst i skopiuj ręcznie.'; } document.body.removeChild(ta); }
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { m.textContent = 'Skopiowano.'; }, fallback); } else { fallback(); }
+    });
+  }
+
+  // ---------- wynik: skan ----------
+  function progress(form, prefix, items, el) {
+    var n = items.filter(function (d) { return val(prefix + d.id) !== null; }).length;
+    el.textContent = n + ' / ' + items.length + ' wymiarów ocenionych';
+  }
+  function calcScan() {
+    var res = document.getElementById('res-scan');
+    var vals = SCAN.map(function (d) { return { name: d.name, v: val('s-' + d.id), tip: d.tip, lv: d.lv, c: document.getElementById('c-' + d.id).value.trim() }; });
+    var missing = vals.filter(function (x) { return x.v === null; });
+    if (missing.length) { res.hidden = false; res.innerHTML = '<h2>Brakuje ocen</h2><p>Oceń jeszcze: ' + missing.map(function (x) { return esc(x.name); }).join(', ') + '.</p>'; return; }
+    var avg = vals.reduce(function (a, x) { return a + x.v; }, 0) / vals.length;
+    var li = avg <= 2.5 ? 0 : (avg <= 3.5 ? 1 : 2);
+    var interp = SCAN_INTERP[li];
+    var minv = Math.min.apply(null, vals.map(function (x) { return x.v; }));
+    var weakest = vals.filter(function (x) { return x.v === minv; });
+    var head = orgLine();
+    var html = '<h2>Wynik skanu 1–5' + (head ? ' · ' + esc(head) : '') + '</h2>' +
+      '<div class="score"><span class="big">' + fmt(avg) + '</span><span><span class="lvl">' + esc(interp.name) + '</span><br><span class="sub">średni wynik ogólny / 5</span></span></div>' +
+      levelsHtml(['1–2,5: Ad hoc / Reaktywny', '2,6–3,5: Zarządzany / Rozwijający się', '3,6–5: Zintegrowany / Proaktywny'], li) +
+      '<div class="interp">' + esc(interp.text) + '</div>' + barsHtml(vals, 5) +
+      '<div class="next"><h3>Najsłabszy wymiar: ' + weakest.map(function (x) { return esc(x.name); }).join(', ') + ' (' + minv + ')</h3><ul>' +
+      weakest.map(function (x) { return '<li>' + esc(x.tip) + (x.v < 5 ? ' Następny poziom (' + (x.v + 1) + '): ' + esc(x.lv[x.v]) : '') + '</li>'; }).join('') + '</ul></div>' + copyBtn('copy-scan');
+    res.hidden = false; res.innerHTML = html;
+    var txt = 'CX Maturity Scan (1–5)' + (head ? ' – ' + head : '') + '\nŚredni wynik: ' + fmt(avg) + ' / 5 – ' + interp.name + '\n' +
+      vals.map(function (x) { return '• ' + x.name + ': ' + x.v + ' (' + x.lv[x.v - 1] + ')' + (x.c ? ' – ' + x.c : ''); }).join('\n') + '\n' + interp.text;
+    wireCopy('copy-scan', txt);
+    res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  // ---------- wynik: rubryka ----------
+  function calcRub() {
+    var res = document.getElementById('res-rub');
+    var vals = RUB.map(function (d) { return { name: d.name, v: val('r-' + d.id), lv: d.lv }; });
+    var missing = vals.filter(function (x) { return x.v === null; });
+    if (missing.length) { res.hidden = false; res.innerHTML = '<h2>Brakuje ocen</h2><p>Oceń jeszcze: ' + missing.map(function (x) { return esc(x.name); }).join(', ') + '.</p>'; return; }
+    var sum = vals.reduce(function (a, x) { return a + x.v; }, 0);
+    var li = sum <= 7 ? 0 : (sum <= 11 ? 1 : 2);
+    var interp = RUB_INTERP[li];
+    var minv = Math.min.apply(null, vals.map(function (x) { return x.v; }));
+    var weakest = vals.filter(function (x) { return x.v === minv; });
+    var head = orgLine();
+    var html = '<h2>Wynik oceny 1–3' + (head ? ' · ' + esc(head) : '') + '</h2>' +
+      '<div class="score"><span class="big">' + sum + '</span><span><span class="lvl">' + esc(interp.name) + '</span><br><span class="sub">suma punktów / 15 · średnia ' + fmt(sum / 5) + '</span></span></div>' +
+      levelsHtml(RUB_INTERP.map(function (x) { return x.name; }), li) +
+      '<div class="interp">' + esc(interp.text) + '</div>' + barsHtml(vals, 3) +
+      '<div class="next"><h3>Następny krok dla najsłabszego wymiaru</h3><ul>' +
+      weakest.map(function (x) { var nxt = x.v < 3 ? x.lv[x.v] : x.lv[2]; return '<li><b>' + esc(x.name) + '</b>: ' + (x.v < 3 ? 'przejście z „' + esc(x.lv[x.v - 1]) + '” do „' + esc(nxt) + '”.' : 'utrzymać poziom „' + esc(nxt) + '”.') + '</li>'; }).join('') +
+      '</ul></div>' + copyBtn('copy-rub');
+    res.hidden = false; res.innerHTML = html;
+    var txt = 'Ocena dojrzałości CX (1–3)' + (head ? ' – ' + head : '') + '\nSuma: ' + sum + ' / 15 – ' + interp.name + '\n' +
+      vals.map(function (x) { return '• ' + x.name + ': ' + x.v + ' (' + x.lv[x.v - 1] + ')'; }).join('\n') + '\n' + interp.text;
+    wireCopy('copy-rub', txt);
+    res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ---------- zakładki i zdarzenia ----------
+  function showTab(which) {
+    var scan = which === 'scan';
+    document.getElementById('tab-scan').setAttribute('aria-selected', scan ? 'true' : 'false');
+    document.getElementById('tab-rub').setAttribute('aria-selected', scan ? 'false' : 'true');
+    document.getElementById('panel-scan').hidden = !scan;
+    document.getElementById('panel-rub').hidden = scan;
+  }
+  buildScan(); buildRub();
+  var fs = document.getElementById('form-scan'), fr = document.getElementById('form-rub');
+  fs.addEventListener('change', function () { progress(fs, 's-', SCAN, document.getElementById('prog-scan')); });
+  fr.addEventListener('change', function () { progress(fr, 'r-', RUB, document.getElementById('prog-rub')); });
+  fs.addEventListener('submit', function (e) { e.preventDefault(); calcScan(); });
+  fr.addEventListener('submit', function (e) { e.preventDefault(); calcRub(); });
+  document.getElementById('calc-scan').addEventListener('click', calcScan);
+  document.getElementById('calc-rub').addEventListener('click', calcRub);
+  document.getElementById('reset-scan').addEventListener('click', function () { fs.reset(); document.getElementById('res-scan').hidden = true; progress(fs, 's-', SCAN, document.getElementById('prog-scan')); });
+  document.getElementById('reset-rub').addEventListener('click', function () { fr.reset(); document.getElementById('res-rub').hidden = true; progress(fr, 'r-', RUB, document.getElementById('prog-rub')); });
+  document.getElementById('tab-scan').addEventListener('click', function () { showTab('scan'); });
+  document.getElementById('tab-rub').addEventListener('click', function () { showTab('rub'); });
+  if (location.hash === '#rubryka') showTab('rub');
+})();
+</script>
+
+</body>
+</html>
